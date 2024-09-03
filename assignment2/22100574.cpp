@@ -39,7 +39,7 @@ int main() {
             // if pixel is smaller than 127 -> negative transformation
             if (current_pixel_value < 128) {
                 trans_image.at<uchar>(j, i) = 255 - current_pixel_value;
-            } else {    // else -> gamma transformation
+            } else {  // else -> gamma transformation
                 trans_image.at<uchar>(j, i) = pix[rotate_image.at<uchar>(j, i)];
             }
         }
@@ -47,6 +47,7 @@ int main() {
 
     // Show result
     imshow("gray image", gray_image);
+    imshow("result", trans_image);
 
     waitKey(0);
 
