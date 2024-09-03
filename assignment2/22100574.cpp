@@ -5,18 +5,18 @@ using namespace cv;
 using namespace std;
 
 int main() {
-    Mat image;
+    Mat gray_image;
     Mat rotate_image, trans_image;
 
-    image = imread("lena.png", 0);
+    gray_image = imread("lena.png", 0);
 
     // Deep copy for rotate the original gray image
-    rotate_image = image.clone();
+    rotate_image = gray_image.clone();
 
     // Rotate image as rotate_image
-    for (int j = 0; j < image.rows; j++) {
-        for (int i = 0; i < image.cols; i++) {
-            rotate_image.at<uchar>(image.cols - 1 - i, j) = image.at<uchar>(j, i);
+    for (int j = 0; j < gray_image.rows; j++) {
+        for (int i = 0; i < gray_image.cols; i++) {
+            rotate_image.at<uchar>(gray_image.cols - 1 - i, j) = gray_image.at<uchar>(j, i);
         }
     }
 
@@ -32,8 +32,8 @@ int main() {
 
     // Perform negative or gamma transformation
     unsigned char current_pixel_value;
-    for (int j = 0; j < image.rows; j++) {
-        for (int i = 0; i < image.cols; i++) {
+    for (int j = 0; j < rotate_image.rows; j++) {
+        for (int i = 0; i < rotate_image.cols; i++) {
             current_pixel_value = rotate_image.at<uchar>(j, i);
 
             // if pixel is smaller than 127 -> negative transformation
@@ -46,7 +46,7 @@ int main() {
     }
 
     // Show result
-    imshow("trans image", trans_image);
+    imshow("gray image", gray_image);
 
     waitKey(0);
 
