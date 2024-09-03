@@ -14,9 +14,14 @@ int main() {
     rotate_image = gray_image.clone();
 
     // Rotate image as rotate_image
+    // for (int j = 0; j < gray_image.rows; j++) {
+    //     for (int i = 0; i < gray_image.cols; i++) {
+    //         rotate_image.at<uchar>(gray_image.cols - 1 - i, j) = gray_image.at<uchar>(j, i);
+    //     }
+    // }
     for (int j = 0; j < gray_image.rows; j++) {
         for (int i = 0; i < gray_image.cols; i++) {
-            rotate_image.at<uchar>(gray_image.cols - 1 - i, j) = gray_image.at<uchar>(j, i);
+            rotate_image.at<uchar>(gray_image.rows - 1 - i, j) = gray_image.at<uchar>(j, i);
         }
     }
 
