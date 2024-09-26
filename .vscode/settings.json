@@ -8,6 +8,10 @@
         "unordered_map": "cpp",
         "vector": "cpp",
         "locale": "cpp",
-        "iostream": "cpp"
-    }
+        "iostream": "cpp",
+        "istream": "cpp",
+        "tuple": "cpp",
+        "variant": "cpp"
+    },
+    "cmake.sourceDirectory": "/Users/eziwon/GitHub/Computer-Vision/assignment4"
 }
