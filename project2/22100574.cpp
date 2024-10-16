@@ -5,72 +5,108 @@ using namespace cv;
 using namespace std;
 
 int main() {
+    Mat frame;
+
     VideoCapture cap;
 
-    // open the video
     if (cap.open("Project2_video.mp4") == 0) {
-        cout << "no such file!" << endl;
+        cout << "no such video!" <<endl;
         return -1;
     }
 
-    // get fps and delay per frame of the video
     int fps = cap.get(CAP_PROP_FPS);
     int delay = 1000 / fps;
 
-    Mat background, frame, gray, foregroundMask;
-    // set first frame as background
-    cap >> background;
-    resize(background, background, Size(640, 480));
-    cvtColor(background, background, COLOR_BGR2GRAY);
+    Rect rect_left(180, 250, 120, 200);
+    Rect rect_right(400, 250, 120, 200);
+    Mat canny_left, canny_right;
 
-    // set Rect
-    Rect rect(250, 240, 100, 240);
+    vector<Vec2f> lines1, lines2;
+    float rho, theta, a, b, x0, y0, total_rho, total_theta;
+    float rho1, theta1, a1, b1, x1, y1, total_rho1, total_theta1;
+    Point p1, p2;
+    Point p3, p4;
+    int lane_count = 0;
 
-    Mat background_roi = background(rect);
-    Mat frame_roi;
-    int flag = 0;
-    while(true) {
+    while(1) {
         cap >> frame;
         if (frame.empty()) {
-            cout << "end of video" << endl;
+            cout << " end of video" << endl;
             break;
         }
 
-        // HoughLine()
+        canny_left = frame(rect_left);
+        cvtColor(canny_left, canny_left, COLOR_BGR2GRAY);
+        blur(canny_left, canny_left, Size(5, 5));
+        Canny(canny_left, canny_left, 10, 100, 3);
 
-        // background substraction <- ROI를 사용해서 앞 차만 확인할 수 있도록 함
-        // 내 차는 안움직이고 앞 차만 움직이는 경우
-        // resizing the video -> fast 작동
+        canny_right = frame(rect_right);
+        cvtColor(canny_right, canny_right, COLOR_BGR2GRAY);
+        blur(canny_right, canny_right, Size(5, 5));
+        Canny(canny_right, canny_right, 10, 100, 3);
 
-        // Resize the frame to be fast
-        resize(frame, frame, Size(640, 480));
-        cvtColor(frame, gray, COLOR_BGR2GRAY);
-        frame_roi = gray(rect);
-
-        absdiff(background_roi, frame_roi, foregroundMask);
-        threshold(foregroundMask, foregroundMask, 100, 1, THRESH_BINARY);
-
-        if ((sum(foregroundMask)[0] > 500) && (flag == 0)){
-            cout << "start moving!" << endl;
-            flag = 1;
+        HoughLines(canny_left, lines1, 1, CV_PI/180, 60, 0, 0, CV_PI / 6, CV_PI / 3);
+        HoughLines(canny_right, lines2, 1, CV_PI/180, 60, 0, 0, CV_PI / 3 * 2, CV_PI / 6 * 5);
+        
+        if (!lines1.size() && !lines2.size()) {
+            lane_count++;
         }
+        if (lane_count > 10) putText(frame, format("Lane departure!"), Point(10, 10), FONT_HERSHEY_SIMPLEX, 1, Scalar(0, 0, 255), 4);
+        if (lines1.size() && lines2.size()) lane_count = 0;
 
-        else if ((sum(foregroundMask)[0] == 0) && (flag == 1)) {
-            cout << "stop!" << endl;
-            flag = 0;
-        }
+        // if (lines1.size()) {
+        //     total_rho = 0;
+        //     total_theta = 0;
+        //     for (int i = 0; i < lines1.size(); i++) {
+        //         rho = lines1[i][0];
+        //         theta = lines1[i][1];
 
-        if (flag == 1)
-            background_roi = frame_roi.clone();
-        // 앞이 갑자기 안움직이면? -> update background
-        // background 없데이트 이후 움직이면 -> 텍스트 출력
-        // 이후 움직임이 없어질 때 까지 그냥 놔둠
-        // 또 안움직이면 -> update background
+        //         total_rho += rho;
+        //         total_theta += theta;
+        //     }
 
+        //     total_rho /= lines1.size();
+        //     total_theta /= lines1.size();
 
-        imshow("video", frame);
+        //     a = cos(total_theta);
+        //     b = sin(total_theta);
+        //     x0 = a * total_rho;
+        //     y0 = b * total_rho;
+
+        //     p1 = Point(cvRound(x0 + 1000 * (-b)) + 180, cvRound(y0 + 1000 * a) + 250);
+        //     p2 = Point(cvRound(x0 - 1000 * (-b)) + 180, cvRound(y0 - 1000 * a) + 250);
+        //     line(frame, p1, p2, Scalar(0, 0, 255), 3, 8);
+        // }
+
+        // if (lines2.size()) {
+        //     total_rho1 = 0;
+        //     total_theta1 = 0;
+        //     for (int i = 0; i < lines2.size(); i++) {
+        //         rho1 = lines2[i][0];
+        //         theta1 = lines2[i][1];
+
+        //         total_rho1 += rho1;
+        //         total_theta1 += theta1;
+        //     }
+
+        //     total_rho1 /= lines2.size();
+        //     total_theta1 /= lines2.size();
+
+        //     a1 = cos(total_theta1);
+        //     b1 = sin(total_theta1);
+        //     x1 = a1 * total_rho1;
+        //     y1 = b1 * total_rho1;
+
+        //     p3 = Point(cvRound(x1 + 1000 * (-b1)) + 400, cvRound(y1 + 1000 * a1) + 250);
+        //     p4 = Point(cvRound(x1 - 1000 * (-b1)) + 400, cvRound(y1 - 1000 * a1) + 250);
+        //     line(frame, p3, p4, Scalar(0, 0, 255), 3, 8);
+        // }
+
+        imshow("canny_right", canny_right);
+        imshow("frame", frame);
+
         if (waitKey(delay) == 27) break;
     }
-    
+
     return 0;
 }
