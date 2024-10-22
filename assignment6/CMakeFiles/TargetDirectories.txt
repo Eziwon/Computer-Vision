@@ -1,0 +1,3 @@
+/Users/eziwon/GitHub/Computer-Vision/assignment6/CMakeFiles/MyProject.dir
+/Users/eziwon/GitHub/Computer-Vision/assignment6/CMakeFiles/edit_cache.dir
+/Users/eziwon/GitHub/Computer-Vision/assignment6/CMakeFiles/rebuild_cache.dir
