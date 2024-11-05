@@ -5,31 +5,20 @@ using namespace std;
 using namespace cv;
 
 struct CallbackParam {
-    Mat frame;
-    Point pt1, pt2;
     Rect roi;
-    // bool drag;
     bool updated;
 };
-
-// void resetProgram(CallbackParam *p, bool *t) {
-//     p->updated = false;
-//     *t = false;
-// }
-
-bool compareBySize(const Rect &a, const Rect &b) {
-    return a.area() > b.area(); // Larger area means closer
-}
 
 int main () {
     CascadeClassifier face_classifier;
     VideoCapture cap;
     CallbackParam param;
-    Mat frame, gray_frame;
+    Mat frame, gray_frame, hsv_frame;
     vector<Rect> faces;
     int num_faces;
     int i;
-    bool n_key = false, m_key = false, f_key = false, t_key = false;
+    bool n_key = false, m_key = false, f_key = false, tracking = false, t_error = false;
+    int t_count = 0;
 
     // Open the video
     if (cap.open("Faces.mp4") == 0) {
@@ -44,8 +33,17 @@ int main () {
     // Face detection configuration
     face_classifier.load("haarcascade_frontalface_alt.xml");
 
-    // param.updated = false;
-    // bool tracking = false;
+    float hrange[] = {0, 180};
+    float srange[] = {0, 255};
+    float vrange[] = {0, 255};
+
+    const float* ranges[] = {hrange, srange, vrange};
+    int channels[] = {0, 1, 2};
+    int hist_sizes[] = {16, 16, 16};
+
+    Mat m_model3d, m_backproj;
+
+    Rect rc;
 
     while(1) {
         // Get a next frame
@@ -54,6 +52,7 @@ int main () {
             cout << "end of video!" << endl;
             break;
         }
+        Mat display_frame = frame.clone();
 
         // Check the input key
         int key = waitKey(delay);
@@ -61,47 +60,134 @@ int main () {
             break;
         } else if(key == 'n') {     // detect the nearest face (제일 앞에 있는 사람 -> scale이 가장 큰 face)
             n_key = true;
-            f_key = m_key = false;
+            f_key = m_key = param.updated = false;
         } else if (key == 'f') {    // detect the farthest face (제일 뒤에 있는 사람 -> scale이 가장 작은 face)
             f_key = true;
-            n_key = m_key = false;
+            n_key = m_key = param.updated = false;
         } else if (key == 'm') {    // detect the face at the middel range
             m_key = true;
-            f_key = n_key = false;
+            f_key = n_key = param.updated = false;
         } else if (key == 'r') {    // reset program
-            m_key = f_key = n_key = false;
-        } else if (key == 't') {
-            // track only the region of face you chose
-            // another window를 사용해서 face region만 보여주기 ("tracking" window name)
-            // 다시 t를 누르면 destroy window
-            // window 지정 전에 t를 누르면 -> "Detect before tracking" message 출력
-            t_key = true;
+            m_key = f_key = n_key = tracking = t_error = param.updated = false;
+            destroyWindow("tracking");
+        } else if (key == 't') {    // tracking
+            if (n_key || m_key || f_key) {  // case 1: user press any key(n, m, f) before
+                // toggle the tracking
+                tracking = !tracking;
+                t_error = false;
+                if (!tracking) {    // turn off the tracking window
+                    param.updated = false;
+                    destroyWindow("tracking");
+                }
+            }
+            else {  // case 2: without previously pressing any keys(n, m, f)
+                t_error = true;
+            }
         } 
 
-        if (n_key || m_key || f_key) {
+        if (n_key) {
             // Convert the frame as grayscale frame
             cvtColor(frame, gray_frame, COLOR_BGR2GRAY);
 
             // Detect faces
-            face_classifier.detectMultiScale(gray_frame, faces, 1.1, 3, 0, Size(45, 45), Size(80, 80));
-            num_faces = faces.size();
+            face_classifier.detectMultiScale(gray_frame, faces, 1.1, 3, 0, Size(76, 76), Size(84, 84));
 
-            // Sort faces in ascending order
-            sort(faces.begin(), faces.end(), compareBySize);
-        }
-
-        if (n_key) {
-            rectangle(frame, faces[0], Scalar(0, 255, 0), 3);
+            if(faces.size() == 0) {
+                rectangle(display_frame, rc, Scalar(0, 255, 0), 3);
+            } else if (faces.size() == 1) { 
+                rectangle(display_frame, faces[0], Scalar(0, 255, 0), 3);
+                // update the recent rc;
+                rc = faces[0];
+            } else if (faces.size() == 2) {
+                if (faces[0].width >= faces[1].width) {
+                    rectangle(display_frame, faces[0], Scalar(0, 255, 0), 3);
+                    rc = faces[0];
+                } else {
+                    rectangle(display_frame, faces[1], Scalar(0, 255, 0), 3);
+                    rc = faces[1];
+                }
+            }
         } 
         else if (m_key) {
-            if (num_faces == 3) rectangle(frame, faces[num_faces-2], Scalar(0, 255, 0), 3);
-            else rectangle(frame, faces[num_faces-1], Scalar(0, 255, 0), 3);
+            // Convert the frame as grayscale frame
+            cvtColor(frame, gray_frame, COLOR_BGR2GRAY);
+
+            // Detect faces
+            face_classifier.detectMultiScale(gray_frame, faces, 1.1, 3, 0, Size(53, 53), Size(56, 56));
+
+            if(faces.size() > 0) {
+                rectangle(display_frame, faces[0], Scalar(0, 255, 0), 3);
+
+                // update the recent rc;
+                rc = faces[0];
+            }
         } 
         else if (f_key) {
-            rectangle(frame, faces[num_faces-1], Scalar(0, 255, 0), 3);
+            // Convert the frame as grayscale frame
+            cvtColor(frame, gray_frame, COLOR_BGR2GRAY);
+
+            // Detect faces
+            face_classifier.detectMultiScale(gray_frame, faces, 1.1, 3, 0, Size(32, 32), Size(39, 39));
+
+            if(faces.size() > 0) {
+                rectangle(display_frame, faces[0], Scalar(0, 255, 0), 3);
+
+                // update the recent rc;
+                rc = faces[0];
+            }
+        } 
+
+        if (t_error) {
+            t_count++;
+            putText(display_frame, format("Detect before tracking"), Point(10, 50), FONT_HERSHEY_SIMPLEX, 1, Scalar(0, 0, 255), 2);
+
+            if (t_count > fps * 2) {
+                t_error = false;
+                t_count = 0;
+            }
+        }
+        else if (tracking) {
+            Rect tracking_rc;
+
+            // Convert frame from RGB to HSV
+            cvtColor(frame, hsv_frame, COLOR_BGR2HSV);
+
+            if (!(param.updated)) {
+                param.roi = rc;
+
+                // Setting the mask for tracking
+                Mat mask = Mat::zeros(param.roi.height, param.roi.width, CV_8U);
+                ellipse(mask, Point(param.roi.width / 2, param.roi.height / 2), Size(param.roi.width / 2, param.roi.height / 2), 0, 0, 360, 255, FILLED);
+                
+                Mat roi(hsv_frame, param.roi);
+
+                // Calculate histogram 
+                calcHist(&roi, 1, channels, mask, m_model3d, 3, hist_sizes, ranges);
+
+                param.updated = true;
+            }
+
+            tracking_rc = param.roi;
+
+            // Apply backprojection
+            calcBackProject(&hsv_frame, 1, channels, m_model3d, m_backproj, ranges);
+
+            // Tracking by using meanShift
+            meanShift(m_backproj, tracking_rc, TermCriteria(TermCriteria::EPS | TermCriteria::COUNT, 10, 1));
+
+            // Setting the tracking window
+            Mat tracking_window = Mat::zeros(frame.size(), frame.type());
+            tracking_window.setTo(Scalar(255, 0, 0)); 
+            frame(tracking_rc).copyTo(tracking_window(tracking_rc));
+
+            // show the tracking window
+            imshow("tracking", tracking_window);
+
+            // update the roi for next tracking
+            param.roi = tracking_rc;
         }
 
-        imshow("Faces", frame);
+        imshow("Faces", display_frame);
     }
     
     return 0;

@@ -12,7 +12,8 @@
         "istream": "cpp",
         "tuple": "cpp",
         "variant": "cpp",
-        "ostream": "cpp"
+        "ostream": "cpp",
+        "ios": "cpp"
     },
     "cmake.sourceDirectory": "/Users/eziwon/GitHub/Computer-Vision/assignment4"
 }
