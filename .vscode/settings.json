@@ -13,7 +13,11 @@
         "tuple": "cpp",
         "variant": "cpp",
         "ostream": "cpp",
-        "ios": "cpp"
+        "ios": "cpp",
+        "__locale": "cpp",
+        "__hash_table": "cpp",
+        "bitset": "cpp",
+        "initializer_list": "cpp"
     },
     "cmake.sourceDirectory": "/Users/eziwon/GitHub/Computer-Vision/assignment4"
 }
