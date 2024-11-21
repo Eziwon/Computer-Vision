@@ -1,6 +1,7 @@
+// #include <opencv/cv.h>
 #include "opencv2/opencv.hpp"
 #include <iostream>
-// #include <opencv2/highqui.h>
+// #include <opencv2/highgui.h>
 
 using namespace cv;
 using namespace std;
@@ -13,7 +14,7 @@ int main () {
     int numBoards = 49;
     int numCornersHor = 7;
     int numCornersVer = 7;
-    int Rect_size = 20;
+    int Rect_size = 150;
 
     int numSquares = (numCornersHor - 1) * (numCornersVer - 1);
     Size board_sz = Size(numCornersHor, numCornersVer);
@@ -45,7 +46,7 @@ int main () {
 
         if (found == 1) {
             cornerSubPix(gray, corners, Size(11, 11), Size(-1, -1),
-                        TermCriteria(CV_TERMCRIT_EPS | CV_TERMCRIT_ITER, 30, 0.1));
+                        TermCriteria(TermCriteria::EPS | TermCriteria::MAX_ITER, 30, 0.1));
             
             drawChessboardCorners(img, board_sz, corners, found);
             
@@ -84,6 +85,7 @@ int main () {
     }
     cout << "==========================================================" << "\n";
 
+    cap.release();
     waitKey();
     return 0;
 }
